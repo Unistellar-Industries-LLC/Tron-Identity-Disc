@@ -2,11 +2,11 @@
 
 // ATmega168
 // PIN DEFINITIONS:
-// PB1-4 ROW DRIVERS (0-3) or to make it brighter PB1-5 ROW DRIVERS (0-4)
+// PB1-4 ROW DRIVERS (0-3)
 // PC0-5,PD2-3: COLUMN DRIVERS (0-7)
 // PD7 BUTTON
 #define F_CPU 14745600
-#define ROWS 5 // this could be 4 but we make the blade brigher by tieing 2 and 3 into 4
+#define ROWS 4
 #define COLS 16
 //#define INVPOL
 
@@ -107,8 +107,8 @@ inline void ledarray_set_columndriver(uint8_t j, uint8_t onoff, uint8_t sense)
 inline void ledarray_all_off() 
 {
   // turn off all row drivers
-  DDRB &= ~( (1<<PB1) | (1<<PB2) | (1<<PB3) | (1<<PB4) | (1<<PB5) );
-  PORTB &= ~( (1<<PB1) | (1<<PB2) | (1<<PB3) | (1<<PB4) | (1<<PB5) );
+  DDRB &= ~( (1<<PB1) | (1<<PB2) | (1<<PB3) | (1<<PB4) );
+  PORTB &= ~( (1<<PB1) | (1<<PB2) | (1<<PB3) | (1<<PB4) );
     
   // turn off all column drivers
   DDRC &= ~( (1<<PC0) | (1<<PC1) | (1<<PC2) | (1<<PC3) | (1<<PC4) | (1<<PC5) );
@@ -172,7 +172,7 @@ void ledarray_init()
   // outputs (set row drivers high for off)
   DDRC &= ~( (1<<PC0) | (1<<PC1) | (1<<PC2) | (1<<PC3) | (1<<PC4) | (1<<PC5) );
   DDRD &= ~( (1<<PD2) | (1<<PD3) );
-  DDRB &= ~( (1<<PB1) | (1<<PB2) | (1<<PB3) | (1<<PB4) | (1<<PB5) );
+  DDRB &= ~( (1<<PB1) | (1<<PB2) | (1<<PB3) | (1<<PB4) );
 }
 
 void powerup_sequence() 
@@ -230,12 +230,10 @@ int main()
   DDRD &= ~(1<<PD7); // set PD7 as input
   PORTD |= (1<<PD7); // turn on internal pull up resistor for PD7
   
-  // if we don't incur a delay here we read the last state of PD7
-  _delay_ms(150);
- 
+  powerup_sequence(); // front inner-C
+
   if (PIND & (1<<PD7))
   {
-	powerup_sequence();
 	_delay_ms(1049);
 	back_inner_c();
   }
