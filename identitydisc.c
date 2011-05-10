@@ -8,7 +8,7 @@
 #define F_CPU 14745600
 #define ROWS 4
 #define COLS 16
-//#define INVPOL
+#define INVPOL
 
 #include <stdio.h>
 #include <inttypes.h>
@@ -75,7 +75,7 @@ inline void ledarray_set_columndriver(uint8_t j, uint8_t onoff, uint8_t sense)
 	else 
 	{ // led off, pins to high impedance
       DDRC &= ~(1 << (PC0 + j));
-      PORTC &= ~(1 << (PC0 + j));
+      //PORTC &= ~(1 << (PC0 + j));
     }
   } 
   else 
@@ -99,30 +99,17 @@ inline void ledarray_set_columndriver(uint8_t j, uint8_t onoff, uint8_t sense)
 	else 
 	{ // led off, pins to high impedance
       DDRD &= ~(1 << (PD2 + j));
-      PORTD &= ~(1 << (PD2 + j));
+      //PORTD &= ~(1 << (PD2 + j));
     }
   }
 }
 
-inline void ledarray_all_off() 
-{
-  // turn off all row drivers
-  DDRB &= ~( (1<<PB1) | (1<<PB2) | (1<<PB3) | (1<<PB4) );
-  PORTB &= ~( (1<<PB1) | (1<<PB2) | (1<<PB3) | (1<<PB4) );
-    
-  // turn off all column drivers
-  DDRC &= ~( (1<<PC0) | (1<<PC1) | (1<<PC2) | (1<<PC3) | (1<<PC4) | (1<<PC5) );
-  PORTC &= ~( (1<<PC0) | (1<<PC1) | (1<<PC2) | (1<<PC3) | (1<<PC4) | (1<<PC5) );
-  DDRD &= ~( (1<<PD2) | (1<<PD3) );
-  PORTD &= ~( (1<<PD2) | (1<<PD3) );  
-}
-
-SIGNAL(SIG_OVERFLOW0) 
+SIGNAL(SIG_OUTPUT_COMPARE1A) 
 {
   // turn off old row driver
   DDRB &= ~(1 << (PB1 + real_row));
-  PORTB &= ~(1 << (PB1 + real_row));
-  ledarray_all_off();
+  //PORTB &= ~(1 << (PB1 + real_row));
+  //ledarray_all_off();
 
   // increment row number
   if (++la_row == 2*ROWS) la_row = 0;
@@ -165,9 +152,10 @@ SIGNAL(SIG_OVERFLOW0)
 
 void ledarray_init() 
 {
-  // Timer0 CK/64 (900Hz)
-  TCCR0B = (1<<CS01) | (1<<CS00);
-  TIMSK0 = (1<<TOIE0);
+  // http://www.et06.dk/atmega_timers
+  TIMSK1 = _BV(OCIE1A); // compare1a interrupt
+  TCCR1B = _BV(CS10) | _BV(WGM12); // ctc mode with CK/256 prescale from 8 MHz (default fuses)
+  OCR1A = 33333; // compare1a value makes it 240 Hz per 2 rows or 30 fps!
   
   // outputs (set row drivers high for off)
   DDRC &= ~( (1<<PC0) | (1<<PC1) | (1<<PC2) | (1<<PC3) | (1<<PC4) | (1<<PC5) );
@@ -229,7 +217,7 @@ int main()
 
   DDRD &= ~(1<<PD7); // set PD7 as input
   PORTD |= (1<<PD7); // turn on internal pull up resistor for PD7
-  
+
   powerup_sequence(); // front inner-C
 
   if (PIND & (1<<PD7))
